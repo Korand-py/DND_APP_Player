@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* Плагин-UI, не Flutter: токены те же, но объявлены локально.
+         Сеть не нужна — JSON читается с диска через <input type="file">. */
+      :root {
+        --void: #000000;
+        --surface1: #09090b;
+        --surface2: #121212;
+        --surface3: #1f1f23;
+        --accent: #9880ff;
+        --on-accent: #0a0612;
+        --text: #f4f4f5;
+        --text-secondary: #a1a1aa;
+        --text-muted: #71717a;
+        --divider: rgba(255, 255, 255, 0.1);
+        --error: #ff6b6b;
+        --success: #4ade80;
+        --radius-md: 16px;
+        --radius-sm: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--void);
+        color: var(--text);
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        gap: 12px;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 20px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        padding: 3px;
+        background: var(--surface1);
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-sm);
+      }
+
+      .tab {
+        flex: 1;
+        height: 32px;
+        border: none;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text-secondary);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .tab.is-active {
+        background: var(--surface3);
+        color: var(--text);
+      }
+
+      .panel {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .panel[hidden] {
+        display: none;
+      }
+
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+
+      input[type="search"] {
+        flex: 1;
+        height: 36px;
+        padding: 0 12px;
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-sm);
+        background: var(--surface1);
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+        outline: none;
+      }
+
+      input[type="search"]::placeholder {
+        color: var(--text-muted);
+      }
+
+      .ghost {
+        height: 36px;
+        padding: 0 14px;
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-sm);
+        background: var(--surface1);
+        color: var(--text-secondary);
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .ghost:hover {
+        color: var(--text);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .count {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      .grid {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding-right: 2px;
+        align-content: start;
+      }
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .filters[hidden] {
+        display: none;
+      }
+
+      .filter {
+        height: 28px;
+        padding: 0 10px;
+        border: 0.5px solid var(--divider);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--text-secondary);
+        font: inherit;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .filter:hover {
+        color: var(--text);
+      }
+
+      .filter.is-active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+      }
+
+      .filter .n {
+        margin-left: 4px;
+        opacity: 0.6;
+      }
+
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 10px;
+        text-align: left;
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-sm);
+        background: var(--surface1);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+        transition: border-color 120ms ease, background 120ms ease;
+      }
+
+      .card:hover {
+        background: var(--surface2);
+        border-color: var(--accent);
+      }
+
+      .thumb {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 76px;
+        border-radius: 9px;
+        background: var(--surface2);
+        overflow: hidden;
+      }
+
+      .thumb img {
+        max-width: 100%;
+        max-height: 68px;
+        object-fit: contain;
+      }
+
+      .thumb .no-preview {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .name {
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 16px;
+        word-break: break-word;
+      }
+
+      .dart {
+        font-size: 10px;
+        line-height: 14px;
+        color: var(--text-muted);
+        word-break: break-all;
+      }
+
+      .size {
+        font-size: 10px;
+        line-height: 14px;
+        color: var(--text-secondary);
+      }
+
+      .empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 24px;
+        text-align: center;
+        border: 0.5px dashed var(--divider);
+        border-radius: var(--radius-md);
+      }
+
+      .empty[hidden] {
+        display: none;
+      }
+
+      .empty p {
+        margin: 0;
+        font-size: 13px;
+        line-height: 19px;
+        color: var(--text-secondary);
+      }
+
+      .drop {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px;
+        background: var(--surface1);
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-md);
+      }
+
+      .hint {
+        margin: 0;
+        font-size: 12px;
+        line-height: 18px;
+        color: var(--text-secondary);
+      }
+
+      .drop label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      input[type="file"] {
+        width: 100%;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      input[type="file"]::file-selector-button {
+        margin-right: 12px;
+        padding: 8px 12px;
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-sm);
+        background: var(--surface2);
+        color: var(--text);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .file-state {
+        font-size: 12px;
+        line-height: 18px;
+        color: var(--text-secondary);
+        min-height: 18px;
+      }
+
+      .file-state[data-state="ok"] {
+        color: var(--success);
+      }
+
+      .file-state[data-state="bad"] {
+        color: var(--error);
+      }
+
+      .primary {
+        height: 44px;
+        border: none;
+        border-radius: var(--radius-md);
+        background: var(--accent);
+        color: var(--on-accent);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .primary:disabled {
+        background: var(--surface3);
+        color: var(--text-muted);
+        cursor: default;
+      }
+
+      .log {
+        flex: 1;
+        min-height: 120px;
+        overflow: auto;
+        padding: 12px;
+        background: var(--surface1);
+        border: 0.5px solid var(--divider);
+        border-radius: var(--radius-md);
+        font-family: "JetBrains Mono", Consolas, monospace;
+        font-size: 11px;
+        line-height: 17px;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+      }
+
+      .log .ok {
+        color: var(--success);
+      }
+
+      .log .warn {
+        color: #fbbf24;
+      }
+
+      .log .err {
+        color: var(--error);
+      }
+
+      .status {
+        min-height: 16px;
+        font-size: 11px;
+        line-height: 16px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .status[data-state="ok"] {
+        color: var(--success);
+      }
+
+      .status[data-state="err"] {
+        color: var(--error);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>DND Design System</h1>
+      <nav class="tabs">
+        <button class="tab is-active" type="button" data-panel="library">
+          Библиотека
+        </button>
+        <button class="tab" type="button" data-panel="build">Сборка</button>
+      </nav>
+    </header>
+
+    <section class="panel" id="panel-library">
+      <div class="row">
+        <input id="search" type="search" placeholder="Поиск: button, chip, card…" />
+        <button class="ghost" id="refresh" type="button">Обновить</button>
+      </div>
+      <div class="filters" id="filters"></div>
+      <div class="count" id="count">—</div>
+      <div class="grid" id="grid"></div>
+      <div class="empty" id="empty" hidden>
+        <p>
+          Дизайн-система ещё не собрана.<br />
+          Плагин соберёт её сам — токены уже внутри.
+        </p>
+        <button class="primary" id="empty-build" type="button">Собрать сейчас</button>
+        <button class="ghost" id="to-build" type="button">Настройки сборки</button>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-build" hidden>
+      <p class="hint">
+        Дизайн-система вшита в плагин: выбирать файл не нужно. Кнопка собирает
+        токены, 6 наших компонентов и 40 блоков Material 3 в текущем файле Figma.
+      </p>
+
+      <button class="primary" id="build" type="button">Собрать в Figma</button>
+
+      <div class="drop">
+        <label for="file">Другой design_system.json — необязательно</label>
+        <input id="file" type="file" accept=".json,application/json" />
+        <div class="file-state" id="state">Будет собрана встроенная копия</div>
+      </div>
+
+      <div class="log" id="log">Готов к работе.</div>
+
+      <footer class="status">
+        Пересборка очищает «DND Design System» и «Flutter Kit». Макеты держи на
+        странице «Макеты» — плагин её не трогает.
+      </footer>
+    </section>
+
+    <div class="status" id="status">Загружаю библиотеку…</div>
+
+    <script>
+      const panels = {
+        library: document.getElementById('panel-library'),
+        build: document.getElementById('panel-build'),
+      };
+      const tabs = Array.from(document.querySelectorAll('.tab'));
+      const grid = document.getElementById('grid');
+      const empty = document.getElementById('empty');
+      const count = document.getElementById('count');
+      const search = document.getElementById('search');
+      const status = document.getElementById('status');
+
+      const fileInput = document.getElementById('file');
+      const fileState = document.getElementById('state');
+      const buildButton = document.getElementById('build');
+      const log = document.getElementById('log');
+
+      let items = [];
+      let payload = null;
+      let activeGroup = 'all';
+      let previewsReady = 0;
+
+      const filters = document.getElementById('filters');
+
+      function post(message) {
+        parent.postMessage({ pluginMessage: message }, '*');
+      }
+
+      function setStatus(text, kind) {
+        status.textContent = text;
+        status.dataset.state = kind || '';
+      }
+
+      function showPanel(name) {
+        for (const tab of tabs) tab.classList.toggle('is-active', tab.dataset.panel === name);
+        for (const key of Object.keys(panels)) panels[key].hidden = key !== name;
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener('click', () => showPanel(tab.dataset.panel));
+      });
+
+      document.getElementById('to-build').addEventListener('click', () => showPanel('build'));
+
+      // --- библиотека ---------------------------------------------------------
+
+      function visibleItems() {
+        const query = search.value.trim().toLowerCase();
+
+        return items.filter((item) => {
+          if (activeGroup !== 'all' && item.group !== activeGroup) return false;
+          if (!query) return true;
+          return [item.name, item.group, item.description, item.dart]
+            .join(' ')
+            .toLowerCase()
+            .includes(query);
+        });
+      }
+
+      function renderFilters() {
+        const groups = [];
+        for (const item of items) {
+          if (!groups.includes(item.group)) groups.push(item.group);
+        }
+        groups.sort((a, b) => a.localeCompare(b));
+
+        filters.textContent = '';
+        filters.hidden = groups.length < 2;
+        if (groups.length < 2) return;
+
+        filters.appendChild(makeFilter('all', 'Все', items.length));
+
+        for (const group of groups) {
+          const total = items.filter((item) => item.group === group).length;
+          filters.appendChild(makeFilter(group, group, total));
+        }
+      }
+
+      function makeFilter(value, label, total) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'filter' + (activeGroup === value ? ' is-active' : '');
+        button.textContent = label;
+
+        const badge = document.createElement('span');
+        badge.className = 'n';
+        badge.textContent = total;
+        button.appendChild(badge);
+
+        button.addEventListener('click', () => {
+          activeGroup = value;
+          renderFilters();
+          renderLibrary();
+        });
+
+        return button;
+      }
+
+      function renderLibrary() {
+        const list = visibleItems();
+        grid.textContent = '';
+
+        count.textContent = items.length === 0
+          ? 'пусто'
+          : list.length === items.length
+            ? items.length + ' компонентов'
+            : list.length + ' из ' + items.length;
+
+        empty.hidden = items.length > 0;
+        grid.hidden = items.length === 0;
+
+        for (const item of list) {
+          grid.appendChild(renderCard(item));
+        }
+
+        if (items.length > 0 && list.length === 0) {
+          const note = document.createElement('p');
+          note.className = 'dart';
+          note.textContent = 'Ничего не найдено по «' + search.value.trim() + '»';
+          grid.appendChild(note);
+        }
+      }
+
+      function renderCard(item) {
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'card';
+        card.dataset.id = item.id;
+        card.title = item.description || item.name;
+
+        const thumb = document.createElement('span');
+        thumb.className = 'thumb';
+        setThumb(thumb, item.preview);
+
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = item.name;
+
+        const dart = document.createElement('span');
+        dart.className = 'dart';
+        dart.textContent = item.dart || item.description || '—';
+
+        const size = document.createElement('span');
+        size.className = 'size';
+        size.textContent = item.group + ' · ' + item.width + '×' + item.height;
+
+        card.append(thumb, name, dart, size);
+        card.addEventListener('click', () => {
+          setStatus('Вставляю: ' + item.name + '…');
+          post({ type: 'insert', nodeId: item.id });
+        });
+
+        return card;
+      }
+
+      function setThumb(thumb, preview) {
+        thumb.textContent = '';
+
+        if (!preview) {
+          const placeholder = document.createElement('span');
+          placeholder.className = 'no-preview';
+          placeholder.textContent = 'превью…';
+          thumb.appendChild(placeholder);
+          return;
+        }
+
+        const image = document.createElement('img');
+        image.alt = '';
+        image.src = 'data:image/png;base64,' + preview;
+        thumb.appendChild(image);
+      }
+
+      /** Превью досылаются по одному: обновляем только нужную карточку. */
+      function applyPreview(id, preview) {
+        const card = grid.querySelector('.card[data-id="' + id + '"]');
+        if (!card) return;
+
+        const thumb = card.querySelector('.thumb');
+        if (thumb) setThumb(thumb, preview);
+      }
+
+      function renderPreviewStatus() {
+        if (items.length === 0) return;
+
+        if (previewsReady < items.length) {
+          setStatus('Превью: ' + previewsReady + ' из ' + items.length + '…');
+          return;
+        }
+
+        setStatus('Клик по карточке вставляет инстанс на текущую страницу.', 'ok');
+      }
+
+      search.addEventListener('input', renderLibrary);
+
+      document.getElementById('refresh').addEventListener('click', () => {
+        setStatus('Обновляю список…');
+        post({ type: 'library' });
+      });
+
+      // --- сборка -------------------------------------------------------------
+
+      function write(text, kind) {
+        const line = document.createElement('div');
+        if (kind) line.className = kind;
+        line.textContent = text;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      fileInput.addEventListener('change', async () => {
+        payload = null;
+        const file = fileInput.files && fileInput.files[0];
+
+        if (!file) {
+          fileState.dataset.state = '';
+          fileState.textContent = 'Будет собрана встроенная копия';
+          return;
+        }
+
+        try {
+          const data = JSON.parse(await file.text());
+
+          if (!Array.isArray(data.components) || data.components.length === 0) {
+            throw new Error('в JSON нет массива components');
+          }
+
+          payload = data;
+          fileState.dataset.state = 'ok';
+          fileState.textContent =
+            file.name +
+            ' — цветов ' +
+            data.colors.length +
+            ', стилей ' +
+            data.typography.length +
+            ', компонентов ' +
+            data.components.length;
+        } catch (error) {
+          fileState.dataset.state = 'bad';
+          fileState.textContent = 'Не разобрал JSON: ' + error.message;
+        }
+      });
+
+      /** Сборка без файла: плагин возьмёт встроенную копию. */
+      function build() {
+        log.textContent = '';
+        write('Сборка: ' + (payload ? payload.name : 'встроенная дизайн-система') + '…');
+        post(payload ? { type: 'build', payload } : { type: 'build' });
+      }
+
+      buildButton.addEventListener('click', build);
+
+      document.getElementById('empty-build').addEventListener('click', () => {
+        setStatus('Собираю дизайн-систему…');
+        build();
+      });
+
+      // --- ответы плагина -----------------------------------------------------
+
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === 'library') {
+          items = msg.items || [];
+          previewsReady = items.filter((item) => item.preview).length;
+          activeGroup = 'all';
+          renderFilters();
+          renderLibrary();
+
+          if (!msg.built) {
+            setStatus('Ни дизайн-системы, ни kit нет — собери их.');
+          } else if (items.length === 0) {
+            setStatus('Компонентов нет: пересобери дизайн-систему.');
+          } else {
+            renderPreviewStatus();
+          }
+        }
+
+        if (msg.type === 'preview') {
+          applyPreview(msg.id, msg.preview);
+          previewsReady += 1;
+          renderPreviewStatus();
+        }
+
+        if (msg.type === 'inserted') {
+          setStatus('Вставлено: ' + msg.name + ' → «' + msg.page + '»', 'ok');
+        }
+
+        if (msg.type === 'done') {
+          write(
+            (msg.auto ? 'Автосборка: страница «' : 'Готово: страница «') +
+              msg.summary.page +
+              '»',
+            'ok',
+          );
+          write(
+            'компонентов: ' +
+              msg.summary.components +
+              ', kit: ' +
+              msg.summary.kit +
+              ', переменных: ' +
+              msg.summary.variables +
+              ', текстовых стилей: ' +
+              msg.summary.textStyles,
+            'ok',
+          );
+          setStatus(
+            'Собрано: ' + msg.summary.components + ' + ' + msg.summary.kit + ' компонентов',
+            'ok',
+          );
+          showPanel('library');
+        }
+
+        if (msg.type === 'error') {
+          write('Ошибка: ' + msg.message, 'err');
+          setStatus('Ошибка: ' + msg.message, 'err');
+        }
+
+        if (Array.isArray(msg.warnings)) {
+          for (const warning of msg.warnings) write('! ' + warning, 'warn');
+        }
+      };
+
+      post({ type: 'library' });
+    </script>
+  </body>
+</html>
